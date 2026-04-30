@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}Loans - SmartLoan{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h2><i class="bi bi-cash-stack"></i> Loans</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLoanModal">
+            <i class="bi bi-plus-lg"></i> New Loan
+        </button>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-calculator"></i> Loan Calculator</h5>
+            </div>
+            <div class="card-body">
+                <form id="calculator-form" novalidate>
+                    <div class="mb-3">
+                        <label class="form-label">Loan Amount</label>
+                        <input type="number" class="form-control" name="amount" id="calc-amount" min="100" step="0.01" data-validate="numeric" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Months</label>
+                        <input type="number" class="form-control" name="months" id="calc-months" min="1" data-validate="integer" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Interest Rate (%)</label>
+                        <input type="number" class="form-control" name="interest_rate" id="calc-rate" min="0" max="100" step="0.01" data-validate="numeric" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Penalty Rate (%)</label>
+                        <input type="number" class="form-control" name="penalty_rate" id="calc-penalty" min="0" max="100" step="0.01" value="2">
+                    </div>
+                    <button type="submit" class="btn btn-success w-100" id="calc-btn">
+                        <i class="bi bi-calculator"></i> Calculate
+                    </button>
+                </form>
+                <div id="calc-results" class="mt-3 d-none">
+                    <hr>
+                    <div class="alert alert-info">
+                        <p class="mb-1"><strong>Monthly Payment:</strong> <span id="result-monthly">0</span></p>
+                        <p class="mb-1"><strong>Total Interest:</strong> <span id="result-interest">0</span></p>
+                        <p class="mb-1"><strong>Total Payable:</strong> <span id="result-total">0</span></p>
+                        <p class="mb-0"><strong>Monthly Penalty:</strong> <span id="result-penalty">0</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-table"></i> Loan List</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="loans-table">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Borrower</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Monthly</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for loan in loans %}
+                            <tr data-loan-id="{{ loan.id }}">
+                                <td>{{ loan.first_name }} {{ loan.last_name }}</td>
+                                <td>{{ loan.loan_type_name }}</td>
+                                <td>{{ "{:,.2f}".format(loan.amount) }}</td>
+                                <td>{{ "{:,.2f}".format(loan.monthly_payment) }}</td>
+                                <td><span class="badge bg-{{ 'primary' if loan.status == 'active' else 'success' if loan.status == 'paid' else 'danger' }}">{{ loan.status|title }}</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" onclick="viewLoan({{ loan.id }})"><i class="bi bi-eye"></i></button>
+                                    <a href="{{ url_for('reports.export_amortization_pdf', loan_id=loan.id) }}" class="btn btn-sm btn-outline-secondary" target="_blank"><i class="bi bi-file-earmark-pdf"></i></a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="6" class="text-center text-muted py-4">No loans found</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Loan Modal -->
+<div class="modal fade" id="addLoanModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Loan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="add-loan-form" novalidate>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Borrower *</label>
+                        <select class="form-select" name="borrower_id" required>
+                            <option value="">Select borrower...</option>
+                            {% for b in borrowers %}
+                            <option value="{{ b.id }}">{{ b.last_name }}, {{ b.first_name }} ({{ b.email }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Loan Type *</label>
+                        <select class="form-select" name="loan_type_id" required>
+                            <option value="">Select type...</option>
+                            {% for t in loan_types %}
+                            <option value="{{ t.id }}">{{ t.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Loan Plan *</label>
+                        <select class="form-select" name="loan_plan_id" id="loan-plan-select" required>
+                            <option value="">Select plan...</option>
+                            {% for p in loan_plans %}
+                            <option value="{{ p.id }}" data-months="{{ p.months }}" data-rate="{{ p.interest_rate }}" data-penalty="{{ p.penalty_rate }}">{{ p.plan_name }} ({{ p.months }} months @ {{ p.interest_rate }}%)</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Amount *</label>
+                        <input type="number" class="form-control" name="amount" min="100" step="0.01" data-validate="numeric" required>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Purpose</label>
+                        <textarea class="form-control" name="purpose" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Release Date *</label>
+                        <input type="date" class="form-control" name="release_date" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="save-loan-btn">
+                        <span class="btn-text">Create Loan</span>
+                        <span class="spinner-border spinner-border-sm d-none"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Loan Modal -->
+<div class="modal fade" id="viewLoanModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Loan Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="loan-details"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Calculator
+    document.getElementById('calculator-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(this));
+        
+        try {
+            const res = await fetch('{{ url_for("loan.calculate_loan") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            
+            if (result.success) {
+                document.getElementById('result-monthly').textContent = formatCurrency(result.monthly_payment);
+                document.getElementById('result-interest').textContent = formatCurrency(result.total_interest);
+                document.getElementById('result-total').textContent = formatCurrency(result.total_amount);
+                document.getElementById('result-penalty').textContent = formatCurrency(result.monthly_penalty);
+                document.getElementById('calc-results').classList.remove('d-none');
+            }
+        } catch (err) {
+            showAlert('danger', 'Calculation failed.');
+        }
+    });
+    
+    // Add loan
+    setupRealTimeValidation(document.getElementById('add-loan-form'));
+    document.getElementById('add-loan-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        if (!validateForm(this)) return;
+        
+        const btn = document.getElementById('save-loan-btn');
+        setLoading(btn, true);
+        
+        try {
+            const res = await fetch('{{ url_for("loan.create_loan") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(Object.fromEntries(new FormData(this)))
+            });
+            const result = await res.json();
+            
+            if (result.success) {
+                showAlert('success', result.message);
+                bootstrap.Modal.getInstance(document.getElementById('addLoanModal')).hide();
+                this.reset();
+                location.reload();
+            } else {
+                showAlert('danger', result.message);
+            }
+        } catch (err) {
+            showAlert('danger', 'An error occurred.');
+        } finally {
+            setLoading(btn, false);
+        }
+    });
+});
+
+async function viewLoan(loanId) {
+    try {
+        const res = await fetch(`/loan/${loanId}`);
+        const result = await res.json();
+        
+        if (result.success) {
+            const l = result.loan;
+            let html = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Borrower:</strong> ${l.first_name} ${l.last_name}</p>
+                        <p><strong>Email:</strong> ${l.email}</p>
+                        <p><strong>Phone:</strong> ${l.phone}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Amount:</strong> ${formatCurrency(l.amount)}</p>
+                        <p><strong>Interest Rate:</strong> ${l.interest_rate}%</p>
+                        <p><strong>Monthly Payment:</strong> ${formatCurrency(l.monthly_payment)}</p>
+                        <p><strong>Total Payable:</strong> ${formatCurrency(l.total_amount)}</p>
+                        <p><strong>Remaining:</strong> ${formatCurrency(l.remaining_balance)}</p>
+                        <p><strong>Status:</strong> <span class="badge bg-${l.status === 'active' ? 'primary' : l.status === 'paid' ? 'success' : 'danger'}">${l.status}</span></p>
+                    </div>
+                </div>
+                <hr>
+                <h6>Amortization Schedule</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead><tr><th>Month</th><th>Date</th><th>Payment</th><th>Principal</th><th>Interest</th><th>Balance</th></tr></thead>
+                        <tbody>
+            `;
+            result.amortization.forEach(row => {
+                html += `<tr><td>${row.month}</td><td>${row.payment_date}</td><td>${formatCurrency(row.monthly_payment)}</td><td>${formatCurrency(row.principal)}</td><td>${formatCurrency(row.interest)}</td><td>${formatCurrency(row.balance)}</td></tr>`;
+            });
+            html += '</tbody></table></div>';
+            
+            if (result.payments.length > 0) {
+                html += '<hr><h6>Payment History</h6><table class="table table-sm"><thead><tr><th>Date</th><th>Amount</th><th>Method</th></tr></thead><tbody>';
+                result.payments.forEach(p => {
+                    html += `<tr><td>${p.payment_date}</td><td>${formatCurrency(p.amount)}</td><td>${p.payment_method}</td></tr>`;
+                });
+                html += '</tbody></table>';
+            }
+            
+            document.getElementById('loan-details').innerHTML = html;
+            new bootstrap.Modal(document.getElementById('viewLoanModal')).show();
+        }
+    } catch (err) {
+        showAlert('danger', 'Failed to load loan details.');
+    }
+}
+</script>
+{% endblock %}
+

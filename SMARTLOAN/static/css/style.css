@@ -1,0 +1,45 @@
+body {
+    background: #f5f7fb;
+    color: #1f2937;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.card {
+    border: 0;
+    border-radius: 1rem;
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    border-top-left-radius: 1rem !important;
+    border-top-right-radius: 1rem !important;
+}
+
+.table > :not(caption) > * > * {
+    vertical-align: middle;
+}
+
+.badge {
+    text-transform: capitalize;
+}
+
+.modal-content {
+    border: 0;
+    border-radius: 1rem;
+}
+
+.btn {
+    border-radius: 0.75rem;
+}
+
+.alert {
+    border-radius: 0.9rem;
+}
+
+.page-actions {
+    gap: 0.75rem;
+}

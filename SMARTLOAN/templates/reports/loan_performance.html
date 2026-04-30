@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Loan Performance Report - SmartLoan{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-graph-up-arrow"></i> Loan Performance Report</h2>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h3>{{ summary.total_loans or 0 }}</h3>
+                <p class="mb-0">Total Loans</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h3>{{ "{:,.2f}".format(summary.total_amount_disbursed or 0) }}</h3>
+                <p class="mb-0">Total Disbursed</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h3>{{ "{:,.2f}".format(summary.total_interest_earned or 0) }}</h3>
+                <p class="mb-0">Interest Earned</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <h3>{{ "{:,.2f}".format(summary.total_outstanding or 0) }}</h3>
+                <p class="mb-0">Outstanding</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5>By Loan Type</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr><th>Type</th><th>Count</th><th>Total Amount</th><th>Avg Rate</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for t in by_type %}
+                            <tr>
+                                <td>{{ t.loan_type_name }}</td>
+                                <td>{{ t.loan_count }}</td>
+                                <td>{{ "{:,.2f}".format(t.total_amount or 0) }}</td>
+                                <td>{{ "{:.2f}".format(t.avg_interest_rate or 0) }}%</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="text-center text-muted">No data</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5>Monthly Disbursement</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr><th>Month</th><th>Loans</th><th>Amount</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for m in monthly_data %}
+                            <tr>
+                                <td>{{ m.month }}</td>
+                                <td>{{ m.loans_created }}</td>
+                                <td>{{ "{:,.2f}".format(m.amount_disbursed or 0) }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="3" class="text-center text-muted">No data</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

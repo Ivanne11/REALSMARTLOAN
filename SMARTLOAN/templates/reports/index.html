@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - SmartLoan{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-file-earmark-text"></i> Reports</h2>
+        <p class="text-muted">Generate and export system reports</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="fs-1 text-primary mb-3"><i class="bi bi-graph-up-arrow"></i></div>
+                <h5>Loan Performance</h5>
+                <p class="text-muted">View loan statistics, status distribution, and monthly trends</p>
+                <a href="{{ url_for('reports.loan_performance') }}" class="btn btn-outline-primary">View Report</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="fs-1 text-success mb-3"><i class="bi bi-people"></i></div>
+                <h5>Borrower Payment History</h5>
+                <p class="text-muted">View payment history for any borrower</p>
+                <a href="{{ url_for('borrower.borrower_list') }}" class="btn btn-outline-success">Select Borrower</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="fs-1 text-danger mb-3"><i class="bi bi-file-earmark-pdf"></i></div>
+                <h5>Amortization PDF</h5>
+                <p class="text-muted">Export amortization schedule as PDF</p>
+                <a href="{{ url_for('loan.loan_list') }}" class="btn btn-outline-danger">Select Loan</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

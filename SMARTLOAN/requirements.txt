@@ -1,0 +1,7 @@
+Flask
+mysql-connector-python
+bcrypt
+reportlab
+python-dateutil
+Werkzeug
+

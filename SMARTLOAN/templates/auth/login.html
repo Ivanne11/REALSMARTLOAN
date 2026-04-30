@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Login - SmartLoan{% endblock %}
+
+{% block content %}
+<style>
+    /* 2026 Aesthetic Definitions */
+    :root {
+        --bg-deep: #0a0f1c;
+        --glass-bg: rgba(22, 28, 45, 0.7);
+        --accent-color: #6366f1; /* Modern Indigo */
+        --text-muted: #94a3b8;
+    }
+
+    body {
+        background-color: var(--bg-deep);
+        /* Subtle glow effect in the background */
+        background-image: radial-gradient(circle at 50% -20%, #1e293b 0%, #0a0f1c 80%);
+        font-family: 'Inter', sans-serif;
+        color: #f8fafc;
+    }
+
+    .glass-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .card-header-2026 {
+        background: rgba(255, 255, 255, 0.03);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 2rem 1rem;
+    }
+
+    .brand-title {
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .form-control {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+    }
+
+    .form-control:focus {
+        background: rgba(0, 0, 0, 0.3);
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        color: #fff;
+    }
+
+    .input-group-text {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-muted);
+        border-radius: 10px;
+    }
+
+    .btn-primary-2026 {
+        background: var(--accent-color);
+        border: none;
+        padding: 0.8rem;
+        font-weight: 600;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary-2026:hover {
+        background: #4f46e5;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .invalid-feedback {
+        font-size: 0.8rem;
+        color: #fb7185;
+    }
+</style>
+
+<div class="row justify-content-center align-items-center min-vh-100">
+    <div class="col-md-5 col-lg-4">
+        <div class="glass-card shadow-2xl">
+            <div class="card-header-2026 text-center">
+                <h3 class="mb-0 brand-title"><i class="bi bi-bank me-2"></i>SmartLoan</h3>
+                <p class="mb-0 mt-2 text-secondary small text-uppercase fw-bold">Loan Management System</p>
+            </div>
+            
+            <div class="card-body p-4 p-md-5">
+                <form id="login-form" method="POST" action="{{ url_for('auth.login') }}" novalidate>
+                    <div class="mb-3">
+                        <label for="username" class="form-label text-secondary small fw-bold">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text border-end-0"><i class="bi bi-person"></i></span>
+                            <input type="text" class="form-control border-start-0" id="username" name="username" 
+                                   placeholder="Enter username" autocomplete="username"
+                                   data-validate="username" data-minlength="4" data-maxlength="20">
+                        </div>
+                        <div class="invalid-feedback" id="username-error"></div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="password" class="form-label text-secondary small fw-bold">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text border-end-0"><i class="bi bi-lock"></i></span>
+                            <input type="password" class="form-control border-start-0 border-end-0" id="password" name="password" 
+                                   placeholder="Enter password" autocomplete="current-password"
+                                   data-validate="password" data-minlength="8">
+                            <button class="btn input-group-text border-start-0" type="button" id="toggle-password">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="invalid-feedback" id="password-error"></div>
+                        <div class="form-text text-muted mt-2">
+                            <small class="opacity-50">Min 8 chars, 1 uppercase, 1 lowercase, 1 number</small>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary-2026 text-white" id="login-btn">
+                            <span class="btn-text">Login</span>
+                            <span class="spinner-border spinner-border-sm d-none" id="login-spinner"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer border-0 bg-transparent text-center pb-4">
+                <small class="text-muted"></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('login-form');
+    const btn = document.getElementById('login-btn');
+    const spinner = document.getElementById('login-spinner');
+    const btnText = btn.querySelector('.btn-text');
+    
+    // Toggle password visibility (Matches original logic)
+    document.getElementById('toggle-password').addEventListener('click', function() {
+        const pwd = document.getElementById('password');
+        const icon = this.querySelector('i');
+        if (pwd.type === 'password') {
+            pwd.type = 'text';
+            icon.classList.replace('bi-eye', 'bi-eye-slash');
+        } else {
+            pwd.type = 'password';
+            icon.classList.replace('bi-eye-slash', 'bi-eye');
+        }
+    });
+    
+    // Real-time validation (Assuming setupRealTimeValidation exists in your base.html)
+    if (typeof setupRealTimeValidation === 'function') {
+        setupRealTimeValidation(form);
+    }
+    
+    form.addEventListener('submit', function(e) {
+        // validateForm is expected from your global scripts
+        if (typeof validateForm === 'function' && !validateForm(form)) {
+            e.preventDefault();
+            return false;
+        }
+        
+        btn.disabled = true;
+        btnText.textContent = 'Logging in...';
+        spinner.classList.remove('d-none');
+    });
+});
+</script>
+{% endblock %}

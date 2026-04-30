@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Borrowers - SmartLoan{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center page-actions">
+        <div>
+            <h2><i class="bi bi-people"></i> Borrowers</h2>
+            <p class="text-muted mb-0">Manage borrower profiles, income data, and risk levels.</p>
+        </div>
+        <button class="btn btn-primary" onclick="openBorrowerModal()">
+            <i class="bi bi-plus-lg"></i> Add Borrower
+        </button>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="borrowers-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>Contact</th>
+                        <th>Employment</th>
+                        <th>Income</th>
+                        <th>Credit Score</th>
+                        <th>Risk</th>
+                        <th>Loans</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for borrower in borrowers %}
+                    <tr data-borrower-id="{{ borrower.id }}">
+                        <td>
+                            <strong>{{ borrower.last_name }}, {{ borrower.first_name }}</strong>
+                            {% if borrower.middle_name %}
+                            <div class="small text-muted">{{ borrower.middle_name }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>{{ borrower.email or 'No email' }}</div>
+                            <div class="small text-muted">{{ borrower.phone }}</div>
+                        </td>
+                        <td>
+                            <div>{{ borrower.employment_status }}</div>
+                            <div class="small text-muted">{{ borrower.employer or 'No employer' }}</div>
+                        </td>
+                        <td>{{ "{:,.2f}".format(borrower.monthly_income or 0) }}</td>
+                        <td>{{ borrower.credit_score or 0 }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if borrower.risk_level == 'Low' else 'warning text-dark' if borrower.risk_level == 'Medium' else 'danger' }}">
+                                {{ borrower.risk_level or 'Medium' }}
+                            </span>
+                        </td>
+                        <td>
+                            <div>{{ borrower.total_loans or 0 }} total</div>
+                            <div class="small text-muted">{{ borrower.active_loans or 0 }} active</div>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="editBorrower({{ borrower.id }})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <a href="{{ url_for('reports.borrower_payment_history', borrower_id=borrower.id) }}" class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-clock-history"></i>
+                            </a>
+                            <button class="btn btn-sm btn-outline-danger" onclick='deleteBorrower({{ borrower.id }}, {{ (borrower.first_name ~ " " ~ borrower.last_name)|tojson }})'>
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="8" class="text-center text-muted py-4">No borrowers found</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="borrowerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="borrower-modal-title">Add Borrower</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="borrower-form" novalidate>
+                <input type="hidden" name="borrower_id" id="borrower-id">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">First Name *</label>
+                            <input type="text" class="form-control" name="first_name" data-validate="name" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" name="last_name" data-validate="name" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Middle Name</label>
+                            <input type="text" class="form-control" name="middle_name" data-validate="name">
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email" data-validate="email">
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Phone *</label>
+                            <input type="text" class="form-control" name="phone" data-validate="phone" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Date of Birth</label>
+                            <input type="date" class="form-control" name="date_of_birth">
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Gender</label>
+                            <select class="form-select" name="gender">
+                                <option value="">Select gender...</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Employment Status *</label>
+                            <select class="form-select" name="employment_status" required>
+                                <option value="Employed">Employed</option>
+                                <option value="Self-Employed">Self-Employed</option>
+                                <option value="Contract">Contract</option>
+                                <option value="Unemployed">Unemployed</option>
+                                <option value="Retired">Retired</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Employer</label>
+                            <input type="text" class="form-control" name="employer">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Monthly Income *</label>
+                            <input type="number" class="form-control" name="monthly_income" min="0" step="0.01" data-validate="numeric" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Address *</label>
+                            <textarea class="form-control" name="address" rows="3" data-validate="required" required></textarea>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="save-borrower-btn">
+                        <span class="btn-text">Save Borrower</span>
+                        <span class="spinner-border spinner-border-sm d-none"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setupRealTimeValidation(document.getElementById('borrower-form'));
+
+    document.getElementById('borrower-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        if (!validateForm(this)) return;
+
+        const borrowerId = document.getElementById('borrower-id').value;
+        const isEdit = Boolean(borrowerId);
+        const url = isEdit ? `/borrower/${borrowerId}/update` : '{{ url_for("borrower.create_borrower") }}';
+        const btn = document.getElementById('save-borrower-btn');
+
+        setLoading(btn, true);
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(Object.fromEntries(new FormData(this)))
+            });
+            const result = await res.json();
+
+            if (result.success) {
+                showAlert('success', result.message);
+                bootstrap.Modal.getInstance(document.getElementById('borrowerModal')).hide();
+                this.reset();
+                location.reload();
+            } else {
+                showAlert('danger', result.message);
+            }
+        } catch (error) {
+            showAlert('danger', 'An error occurred while saving the borrower.');
+        } finally {
+            setLoading(btn, false);
+        }
+    });
+});
+
+function openBorrowerModal() {
+    const form = document.getElementById('borrower-form');
+    form.reset();
+    clearFormValidation(form);
+    document.getElementById('borrower-id').value = '';
+    document.getElementById('borrower-modal-title').textContent = 'Add Borrower';
+    document.querySelector('#save-borrower-btn .btn-text').textContent = 'Save Borrower';
+    new bootstrap.Modal(document.getElementById('borrowerModal')).show();
+}
+
+async function editBorrower(borrowerId) {
+    try {
+        const res = await fetch(`/borrower/${borrowerId}`);
+        const result = await res.json();
+
+        if (!result.success) {
+            showAlert('danger', result.message || 'Failed to load borrower.');
+            return;
+        }
+
+        const form = document.getElementById('borrower-form');
+        form.reset();
+        clearFormValidation(form);
+        populateForm(form, result.borrower);
+        document.getElementById('borrower-id').value = borrowerId;
+        document.getElementById('borrower-modal-title').textContent = 'Edit Borrower';
+        document.querySelector('#save-borrower-btn .btn-text').textContent = 'Update Borrower';
+        new bootstrap.Modal(document.getElementById('borrowerModal')).show();
+    } catch (error) {
+        showAlert('danger', 'Failed to load borrower details.');
+    }
+}
+
+function deleteBorrower(borrowerId, borrowerName) {
+    if (!confirm(`Delete borrower "${borrowerName}"?`)) {
+        return;
+    }
+
+    fetch(`/borrower/${borrowerId}/delete`, { method: 'POST' })
+        .then(r => r.json())
+        .then(result => {
+            if (result.success) {
+                showAlert('success', result.message);
+                location.reload();
+            } else {
+                showAlert('danger', result.message);
+            }
+        })
+        .catch(() => showAlert('danger', 'Failed to delete borrower.'));
+}
+</script>
+{% endblock %}

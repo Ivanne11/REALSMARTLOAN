@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Loan Types - SmartLoan{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h2><i class="bi bi-tags"></i> Loan Types</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTypeModal">
+            <i class="bi bi-plus-lg"></i> Add Type
+        </button>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr><th>ID</th><th>Name</th><th>Description</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    {% for type in loan_types %}
+                    <tr data-type-id="{{ type.id }}">
+                        <td>{{ type.id }}</td>
+                        <td>{{ type.name }}</td>
+                        <td>{{ type.description or '-' }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick='editType({{ type.id }}, {{ type.name|tojson }}, {{ (type.description or "")|tojson }})'>
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteType({{ type.id }})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center text-muted py-4">No loan types found</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal fade" id="addTypeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="type-modal-title">Add Loan Type</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="type-form" novalidate>
+                <input type="hidden" name="type_id" id="type-id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Name *</label>
+                        <input type="text" class="form-control" name="name" id="type-name" data-validate="required" required>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" id="type-desc" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="save-type-btn">
+                        <span class="btn-text">Save</span>
+                        <span class="spinner-border spinner-border-sm d-none"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setupRealTimeValidation(document.getElementById('type-form'));
+    
+    document.getElementById('type-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        if (!validateForm(this)) return;
+        
+        const typeId = document.getElementById('type-id').value;
+        const url = typeId ? `/admin/loan-types/${typeId}/update` : '{{ url_for("admin.create_loan_type") }}';
+        
+        const btn = document.getElementById('save-type-btn');
+        setLoading(btn, true);
+        
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(Object.fromEntries(new FormData(this)))
+            });
+            const result = await res.json();
+            
+            if (result.success) {
+                showAlert('success', result.message);
+                bootstrap.Modal.getInstance(document.getElementById('addTypeModal')).hide();
+                location.reload();
+            } else {
+                showAlert('danger', result.message);
+            }
+        } catch (err) {
+            showAlert('danger', 'An error occurred.');
+        } finally {
+            setLoading(btn, false);
+        }
+    });
+});
+
+function editType(id, name, desc) {
+    document.getElementById('type-modal-title').textContent = 'Edit Loan Type';
+    document.getElementById('type-id').value = id;
+    document.getElementById('type-name').value = name;
+    document.getElementById('type-desc').value = desc;
+    new bootstrap.Modal(document.getElementById('addTypeModal')).show();
+}
+
+function deleteType(id) {
+    if (!confirm('Delete this loan type?')) return;
+    fetch(`/admin/loan-types/${id}/delete`, { method: 'POST' })
+        .then(r => r.json())
+        .then(result => {
+            if (result.success) { showAlert('success', result.message); location.reload(); }
+            else { showAlert('danger', result.message); }
+        });
+}
+</script>
+{% endblock %}
+

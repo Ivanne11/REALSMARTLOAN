@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Borrower Payment History - SmartLoan{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-people"></i> Borrower Payment History</h2>
+        <h5>{{ borrower.first_name }} {{ borrower.last_name }} - {{ borrower.email }}</h5>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5>Loan Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr><th>Loan ID</th><th>Type</th><th>Amount</th><th>Total Paid</th><th>Payments</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for loan in loans %}
+                            <tr>
+                                <td>#{{ loan.loan_id }}</td>
+                                <td>{{ loan.loan_type_name }}</td>
+                                <td>{{ "{:,.2f}".format(loan.amount) }}</td>
+                                <td>{{ "{:,.2f}".format(loan.total_paid or 0) }}</td>
+                                <td>{{ loan.payment_count }}</td>
+                                <td><span class="badge bg-{{ 'primary' if loan.status == 'active' else 'success' if loan.status == 'paid' else 'danger' }}">{{ loan.status|title }}</span></td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="6" class="text-center text-muted">No loans found</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5>Payment History</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr><th>Date</th><th>Loan</th><th>Amount</th><th>Penalty</th><th>Total</th><th>Method</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for p in payments %}
+                            <tr>
+                                <td>{{ p.payment_date }}</td>
+                                <td>#{{ p.loan_id }} - {{ p.loan_type_name }}</td>
+                                <td>{{ "{:,.2f}".format(p.amount) }}</td>
+                                <td>{{ "{:,.2f}".format(p.penalty_amount or 0) }}</td>
+                                <td>{{ "{:,.2f}".format(p.total_payment) }}</td>
+                                <td>{{ p.payment_method|title }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="6" class="text-center text-muted">No payments found</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
